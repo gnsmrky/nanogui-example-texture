@@ -1,6 +1,15 @@
 cmake_minimum_required (VERSION 3.13..3.18)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.14)
 
+# config cmake
+set(CMAKE_BUILD_TYPE Debug)
+
+set(NANOGUI_BUILD_SHARED   ON CACHE BOOL " " FORCE)
+set(NANOGUI_BUILD_EXAMPLES ON CACHE BOOL " " FORCE)
+set(NANOGUI_BUILD_PYTHON   OFF CACHE BOOL " " FORCE)
+set(NANOGUI_INSTALL        ON CACHE BOOL " " FORCE)
+set(NANOGUI_BACKEND "GLES 3" CACHE STRING " " FORCE)
+
 # Extract project version from source
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/include/nanogui/common.h"
   nanogui_version_defines REGEX "#define NANOGUI_VERSION_(MAJOR|MINOR|PATCH) ")
@@ -59,6 +68,7 @@ set(NANOGUI_BUILD_SHARED_DEFAULT ON)
 set(NANOGUI_BUILD_PYTHON_DEFAULT ON)
 set(NANOGUI_BUILD_GLFW_DEFAULT ON)
 
+
 if (CMAKE_CXX_COMPILER MATCHES "/em\\+\\+(-[a-zA-Z0-9.])?$")
   set(CMAKE_CXX_COMPILER_ID "Emscripten")
   set(NANOGUI_BUILD_SHARED_DEFAULT OFF)
@@ -85,7 +95,7 @@ elseif (APPLE AND ((CMAKE_OSX_ARCHITECTURES MATCHES "arm64") OR
   # Apple M1 compatibility
   set(NANOGUI_NATIVE_FLAGS_DEFAULT "-mcpu=apple-a12")
 else()
-  set(NANOGUI_NATIVE_FLAGS_DEFAULT "-march=nehalem")
+  #set(NANOGUI_NATIVE_FLAGS_DEFAULT "-march=nehalem") # NOTE: remove to make it work on ARM
 endif()
 
 option(NANOGUI_BUILD_EXAMPLES            "Build NanoGUI example application?" ON)
@@ -309,7 +319,8 @@ elseif (CMAKE_SYSTEM MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "BSD")
   elseif (NANOGUI_BACKEND STREQUAL "GLES 2")
     list(APPEND NANOGUI_LIBS GLESv2)
   elseif (NANOGUI_BACKEND STREQUAL "GLES 3")
-    list(APPEND NANOGUI_LIBS GLESv3)
+    #list(APPEND NANOGUI_LIBS GLESv3)
+    list(APPEND NANOGUI_LIBS GLESv2) # NOTE: mesa based system implements GLESv3 in GLESv2 lib
   endif()
   if (NOT CMAKE_SYSTEM_NAME MATCHES "OpenBSD")
     list(APPEND NANOGUI_LIBS rt)
@@ -559,17 +570,19 @@ endif()
 
 # Build example application if desired
 if (NANOGUI_BUILD_EXAMPLES)
-  add_executable(example1      src/example1.cpp)
-  add_executable(example2      src/example2.cpp)
-  add_executable(example3      src/example3.cpp)
+  #add_executable(example1      src/example1.cpp)
+  #add_executable(example2      src/example2.cpp)
+  #add_executable(example3      src/example3.cpp)
   add_executable(example4      src/example4.cpp)
-  add_executable(example_icons src/example_icons.cpp)
+  add_executable(example5      src/example5.cpp)
+  #add_executable(example_icons src/example_icons.cpp)
 
-  target_link_libraries(example1      nanogui)
-  target_link_libraries(example2      nanogui)
-  target_link_libraries(example3      nanogui ${NANOGUI_LIBS}) # For OpenGL
-  target_link_libraries(example4      nanogui)
-  target_link_libraries(example_icons nanogui)
+  #target_link_libraries(example1      nanogui)
+  #target_link_libraries(example2      nanogui)
+  #target_link_libraries(example3      nanogui ${NANOGUI_LIBS})
+  target_link_libraries(example4      nanogui) # For OpenGL
+  target_link_libraries(example5      nanogui ${NANOGUI_LIBS})
+  #target_link_libraries(example_icons nanogui)
 
   # Copy icons for example application
   file(COPY resources/icons DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

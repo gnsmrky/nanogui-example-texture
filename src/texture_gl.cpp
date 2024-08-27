@@ -48,6 +48,12 @@
 #  define GL_DEPTH_COMPONENT32F 0x8CAC
 #endif
 
+// NOTE: Add to support GL_TEXTURE_2D_MULTISAMPLE
+#if !defined(GL_TEXTURE_2D_MULTISAMPLE)
+#define GL_TEXTURE_2D_MULTISAMPLE 0x9100
+#endif //GL_TEXTURE_2D_MULTISAMPLE
+
+
 NAMESPACE_BEGIN(nanogui)
 
 static void gl_map_texture_format(Texture::PixelFormat &pixel_format,
