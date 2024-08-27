@@ -1,3 +1,11 @@
+Add [example5.cpp] - using OpenGL ES 3.1 to draw a texture cube.
+
+.. image:: ./docs/example5-screenshot.png
+   :alt: Screenshot of Example 5.
+   :align: center
+
+------------------------- Original Readme -------------------------
+
 NanoGUI
 ========================================================================================
 |docs| |gha|
