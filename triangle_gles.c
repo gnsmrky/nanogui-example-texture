@@ -16,6 +16,7 @@ static struct glData {
     GLuint vbo;
 } glData;
 
+#if 0
 const char vert_shader_source[] = "#version 300 es                         \n"
                                   "precision mediump float;                \n"
                                   "layout (location = 0) in vec3 Position; \n"
@@ -31,6 +32,40 @@ const char frag_shader_source[] = "#version 300 es                             \
                                   "{                                           \n"
                                   "  fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f); \n"
                                   "}                                           \n";
+#endif
+
+const char vert_shader_source[] = "#version 310 es              \n"
+                                    "precision highp float;     \n"
+
+                                    "uniform mat4 mvp;          \n"
+                                    "layout (location = 0) in vec3 position;          \n"
+                                    "in vec3 color;             \n"
+                                    "in vec2 texcoord;          \n"
+
+                                    "out vec4 frag_color;       \n"
+                                    //"out vec2 uv;               \n"
+
+                                    "void main() {                                   \n"
+                                    "   gl_Position = vec4(position, 1.0);              \n"
+                                    //"    frag_color = vec4(color, 1.0);              \n"
+                                    //"    gl_Position = mvp * vec4(position, 1.0);    \n"
+                                    //"    uv = texcoord;                              \n"
+                                    "}";
+
+const char frag_shader_source[] = "#version 310 es              \n"
+                                    "precision highp float;     \n"
+                                    
+                                    "uniform sampler2D image;   \n"
+                                    "in vec4 frag_color;        \n"
+                                    "in vec2 uv;                \n"
+                                    "out vec4 c;                \n"
+
+                                    "void main() {                                      \n"
+                                    //"    vec4 value = texture(image, frag_color.xy);    \n"
+                                    //"    c = value;                                     \n"
+                                    "    c = vec4(1.0,1.0,1.0,1.0);                   \n"
+                                    "}";
+
 
 #define POSITION 0
 
@@ -157,11 +192,22 @@ bool setupOpenGL()
         fprintf(stderr, "failed to initialize program\n");
         return false;
     }
-
+    #if 0
     GLfloat vVertices[] = {
         -0.5f, -0.5f, 0.0f,
         0.0f, 0.5f, 0.0f,
         0.5f, -0.5f, 0.0f,
+    };
+    #endif
+    
+    GLfloat vVertices[] = {
+        -1.0f, -1.0f, 0.0f,
+        -1.0f,  1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
+        
+        -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
     };
 
     glClearColor(0, 0, 0, 1);
@@ -183,7 +229,7 @@ void drawTriangle()
     glEnableVertexAttribArray(POSITION);
     glBindBuffer(GL_ARRAY_BUFFER, glData.vbo);
     glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
     glDisableVertexAttribArray(POSITION);
     glutSwapBuffers();
 }

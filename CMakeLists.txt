@@ -576,6 +576,7 @@ if (NANOGUI_BUILD_EXAMPLES)
   add_executable(example4      src/example4.cpp)
   add_executable(example5      src/example5.cpp)
   #add_executable(example_icons src/example_icons.cpp)
+  add_executable(triangle_gles triangle_gles.c)
 
   #target_link_libraries(example1      nanogui)
   #target_link_libraries(example2      nanogui)
@@ -583,6 +584,7 @@ if (NANOGUI_BUILD_EXAMPLES)
   target_link_libraries(example4      nanogui) # For OpenGL
   target_link_libraries(example5      nanogui ${NANOGUI_LIBS})
   #target_link_libraries(example_icons nanogui)
+  target_link_libraries(triangle_gles "GL;glut;GLEW")
 
   # Copy icons for example application
   file(COPY resources/icons DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
