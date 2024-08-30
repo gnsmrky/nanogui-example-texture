@@ -584,7 +584,7 @@ if (NANOGUI_BUILD_EXAMPLES)
   target_link_libraries(example4      nanogui) # For OpenGL
   target_link_libraries(example5      nanogui ${NANOGUI_LIBS})
   #target_link_libraries(example_icons nanogui)
-  target_link_libraries(triangle_gles "GL;glut;GLEW")
+  target_link_libraries(triangle_gles nanogui "GL;glut;GLEW")
 
   # Copy icons for example application
   file(COPY resources/icons DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

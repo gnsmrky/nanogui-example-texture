@@ -24,7 +24,7 @@
 #include <GLFW/glfw3.h>
 #include <iostream>
 
-#include <limits.h> // for MAX_PATH
+#include <limits.h> // for PATH_MAX
 #include <unistd.h>
 #include <nanogui/label.h>
 #include <nanogui/button.h>
