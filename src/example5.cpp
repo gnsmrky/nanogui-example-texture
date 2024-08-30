@@ -248,8 +248,8 @@ public:
             precision highp float;
 
             uniform mat4 mvp;
-            in vec3 position;
-            in vec3 color;
+            layout (location = 0) in vec3 position;
+            layout (location = 1) in vec3 color;
             in vec2 texcoord;
 
             out vec4 frag_color;
@@ -277,7 +277,14 @@ public:
                 //NOTE: <-- by un-comment this line, it makes GLES 3 compiler generates incorrect shader (missing 'color')
                 //          GLESv3 is implemented by mesa's GLESv2.  But the this library does not compile version 310 es shader correctly...
                 //          GLESv3 is not part of mesa environment.
-                //c = vec4(1.0,1.0,1.0,1.0);
+                //c = vec4(1.0, 0.0, 0.0, 1.0);
+
+                //NOTE: Seems like OpenGL ES compiler would strip out unused attributes during compilation.  The above fixed color value 
+                //          'c' variable renders 'color' in vertex shader has no dependencies.  Thus 'color' would be removed during 
+                //          shader compilation.
+                //          However, this following line makes use of 'frag_color', which depends on 'color' in vertex shader.  So 'color'
+                //          attribute is kept.
+                c = vec4(value.x, 0.0, 0.0, 1.0);
             })"
 #elif defined(NANOGUI_USE_METAL)
             // Vertex shader
@@ -443,6 +450,7 @@ public:
     ExampleApplication() : nanogui::Screen(Vector2i(1000, 800), "NanoGUI Test (example 5 - Textured Cube)", false) {
         using namespace nanogui;
 
+#if 1
         Window *window = new Window(this, "Canvas widget demo");
         window->set_position(Vector2i(15, 15));
         window->set_layout(new GroupLayout());
@@ -465,6 +473,7 @@ public:
         b1->set_callback([this]() {
             m_canvas->set_rotation((float) Pi * rand() / (float) RAND_MAX);
         });
+#endif
 
         //----- new window for GLES 3.1 Canvas -----
         Window *texture_window = new Window(this, "Textured Cube");

@@ -22,9 +22,9 @@ static struct glData {
 
     GLuint color;
     GLuint texture;
-} glData;
+} glData, glData_310es;
 
-#if 0
+#if 1
 const char vert_shader_source[] = "#version 300 es                         \n"
                                   "precision mediump float;                \n"
                                   "layout (location = 0) in vec3 Position; \n"
@@ -42,7 +42,7 @@ const char frag_shader_source[] = "#version 300 es                             \
                                   "}                                           \n";
 #endif
 
-const char vert_shader_source[] = "#version 310 es              \n"
+const char vert_shader_source_310es[] = "#version 310 es              \n"
                                     "precision highp float;     \n"
 
                                     "uniform mat4 mvp;          \n"
@@ -60,7 +60,7 @@ const char vert_shader_source[] = "#version 310 es              \n"
                                     //"    uv = texcoord;                              \n"
                                     "}";
 
-const char frag_shader_source[] = "#version 310 es              \n"
+const char frag_shader_source_310es[] = "#version 310 es              \n"
                                     "precision highp float;     \n"
                                     
                                     "uniform sampler2D image;   \n"
@@ -71,7 +71,7 @@ const char frag_shader_source[] = "#version 310 es              \n"
                                     "void main() {                                      \n"
                                     "    vec4 value = texture(image, frag_color.xy);    \n"
                                     "    c = value;                                     \n"
-                                    //"    c = vec4(1.0,1.0,1.0,1.0);                   \n"
+                                    "    c = vec4(value.x,0.0,0.0,1.0);                   \n"
                                     //"    c = frag_color;                   \n"
                                     "}";
 
@@ -163,7 +163,8 @@ static GLuint createAndLinkProgram(GLuint v_shader, GLuint f_shader)
 static bool initProgram()
 {
     GLuint v_shader, f_shader;
-
+    
+    // OpenGL
     v_shader = buildShader(vert_shader_source, GL_VERTEX_SHADER);
     if (v_shader == 0) {
         fprintf(stderr, "failed to build vertex shader\n");
@@ -192,7 +193,44 @@ static bool initProgram()
     // this won't actually delete the shaders until the program is closed but it's a good practice
     glDeleteShader(v_shader);
     glDeleteShader(f_shader);
+
+    // 310es
+    v_shader = buildShader(vert_shader_source_310es, GL_VERTEX_SHADER);
+    if (v_shader == 0) {
+        fprintf(stderr, "failed to build vertex shader\n");
+        return false;
+    }
+
+    f_shader = buildShader(frag_shader_source_310es, GL_FRAGMENT_SHADER);
+    if (f_shader == 0) {
+        fprintf(stderr, "failed to build fragment shader\n");
+        glDeleteShader(v_shader);
+        return false;
+    }
+
+    glReleaseShaderCompiler(); // should release resources allocated for the compiler
+
+    glData_310es.program = createAndLinkProgram(v_shader, f_shader);
+    if (glData_310es.program == 0) {
+        fprintf(stderr, "failed to create and link program\n");
+        glDeleteShader(v_shader);
+        glDeleteShader(f_shader);
+        return false;
+    }
+
+    glUseProgram(glData_310es.program);
+
+    // this won't actually delete the shaders until the program is closed but it's a good practice
+    glDeleteShader(v_shader);
+    glDeleteShader(f_shader);
     
+
+    GLuint num_attrs = 0;
+    glGetProgramiv(glData.program, GL_ACTIVE_ATTRIBUTES, &num_attrs);
+    
+    GLuint num_attrs_310es = 0;
+    glGetProgramiv(glData_310es.program, GL_ACTIVE_ATTRIBUTES, &num_attrs_310es);
+
     return true;
 }
 
@@ -202,6 +240,7 @@ bool setupOpenGL()
         fprintf(stderr, "failed to initialize program\n");
         return false;
     }
+
     #if 0
     GLfloat vVertices[] = {
         -0.5f, -0.5f, 0.0f,
@@ -291,6 +330,8 @@ void reshape(int width, int height)
 
 void drawTriangle()
 {
+    glUseProgram(glData.program);
+
     glClear(GL_COLOR_BUFFER_BIT);
 
     glEnableVertexAttribArray(POSITION);
@@ -303,6 +344,10 @@ void drawTriangle()
 
     glBindTexture(GL_TEXTURE_2D, glData.texture);
 
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+    glUseProgram(glData_310es.program);
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     glDisableVertexAttribArray(POSITION);
