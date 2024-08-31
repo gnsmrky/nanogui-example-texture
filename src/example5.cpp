@@ -319,19 +319,21 @@ static GLuint createAndLinkProgram(GLuint v_shader, GLuint f_shader)
     return program;
 }
 
-void drawTriangle(GLuint program, GLuint vbo, GLuint color, GLuint texture)
+void drawTriangle(GLuint program, GLuint vao, GLuint texture)
 {
     glUseProgram(program);
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableVertexAttribArray(POSITION);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    //glEnableVertexAttribArray(POSITION);
+    //glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    //glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glEnableVertexAttribArray(COLOR);
-    glBindBuffer(GL_ARRAY_BUFFER, color);
-    glVertexAttribPointer(COLOR, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    //glEnableVertexAttribArray(COLOR);
+    //glBindBuffer(GL_ARRAY_BUFFER, color);
+    //glVertexAttribPointer(COLOR, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindVertexArray(vao);
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -520,6 +522,7 @@ public:
         }
 
         // create quad for drawing texture to frame buffer
+        #if 0
         GLfloat vVertices[] = {
             -1.0f, -1.0f, 0.0f,
             -1.0f,  1.0f, 0.0f,
@@ -540,8 +543,8 @@ public:
             1.0f, -1.0f, 0.0f,
             1.0f,  0.0f, 0.0f,
         };
-        
-        glClearColor(0, 0, 0, 1);
+
+        //glClearColor(0, 0, 0, 1);
         glGenBuffers(1, &m_vbo);
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices), vVertices, GL_STATIC_DRAW);
@@ -549,6 +552,28 @@ public:
         glGenBuffers(1, &m_color);
         glBindBuffer(GL_ARRAY_BUFFER, m_color);
         glBufferData(GL_ARRAY_BUFFER, sizeof(vColors), vColors, GL_STATIC_DRAW);
+
+        #endif
+        
+        GLfloat vVertices[] = {
+            -1.0f, -1.0f, 0.0f,    0.0f,  0.0f, 0.0f,
+            -1.0f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
+             1.0f, -1.0f, 0.0f,    1.0f,  0.0f, 0.0f,
+            
+            -1.0f,  1.0f, 0.0f,    0.0f, -1.0f, 0.0f,
+             1.0f,  1.0f, 0.0f,    1.0f, -1.0f, 0.0f,
+             1.0f, -1.0f, 0.0f,    1.0f,  0.0f, 0.0f
+        };
+
+        glGenVertexArrays(1, &m_vao);
+        glGenBuffers(1, &m_vbo);
+        glBindVertexArray(m_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices), &vVertices, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
         // create frame buffer
         glGenFramebuffers(1, &m_fbo);
@@ -606,7 +631,7 @@ public:
 
         // draw texture to frame buffer
         glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-        drawTriangle (m_program, m_vbo, m_color, m_texture);
+        drawTriangle (m_program, m_vao, m_texture);
 
         // unbind fbo
         glViewport(m_prev_viewport[0], m_prev_viewport[1], m_prev_viewport[2], m_prev_viewport[3]);
@@ -661,6 +686,8 @@ public:
         
         //glActiveTexture(GL_TEXTURE0 + m_texture);
         //glBindTexture(GL_TEXTURE_2D, m_texture);
+        
+        //glDisable(GL_BLEND);
         glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
 
         m_shader->draw_array(Shader::PrimitiveType::Triangle, 0, 12*3, true);
@@ -680,6 +707,7 @@ private:
 
     GLuint m_program;
 
+    GLuint m_vao;
     GLuint m_vbo, m_color;
     
     int m_prev_viewport[4] = { 0 };
