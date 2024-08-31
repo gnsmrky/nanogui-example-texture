@@ -337,10 +337,6 @@ void drawTriangle(GLuint program, GLuint vbo, GLuint color, GLuint texture)
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
-
-    glUseProgram(program);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-
     glDisableVertexAttribArray(POSITION);
     glDisableVertexAttribArray(COLOR);
 
