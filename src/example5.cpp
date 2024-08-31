@@ -212,6 +212,141 @@ private:
 };
 
 
+
+const char vert_shader_source_310es[] = "#version 310 es              \n"
+                                    "precision highp float;     \n"
+
+                                    "uniform mat4 mvp;          \n"
+                                    "layout (location = 0) in vec3 position;          \n"
+                                    "layout (location = 1) in vec3 color;             \n"
+                                    //"in vec2 texcoord;          \n"
+
+                                    "out vec4 frag_color;       \n"
+                                    //"out vec2 uv;               \n"
+
+                                    "void main() {                                   \n"
+                                    "   gl_Position = vec4(position, 1.0);              \n"
+                                    "   frag_color = vec4(color, 1.0);              \n"
+                                    //"    gl_Position = mvp * vec4(position, 1.0);    \n"
+                                    //"    uv = texcoord;                              \n"
+                                    "}";
+
+const char frag_shader_source_310es[] = "#version 310 es              \n"
+                                    "precision highp float;     \n"
+                                    
+                                    "uniform sampler2D image;   \n"
+                                    "in vec4 frag_color;        \n"
+                                    //"in vec2 uv;                \n"
+                                    "out vec4 c;                \n"
+
+                                    "void main() {                                      \n"
+                                    "    vec4 value = texture(image, frag_color.xy);    \n"
+                                    //"    c = value;                                     \n"
+                                    "    c = vec4(value.xyz, 1.0);                   \n"
+                                    //"    c = vec4(value.x, 0.0, 0.0, 1.0);                   \n"
+                                    //"    c = frag_color;                   \n"
+                                    "}";
+
+
+#define POSITION 0
+#define COLOR    1
+
+static GLuint buildShader(const char* shader_source, GLenum type)
+{
+    GLuint shader;
+    GLint status;
+
+    shader = glCreateShader(type);
+    if (shader == 0) {
+        return 0;
+    }
+
+    glShaderSource(shader, 1, &shader_source, NULL);
+    glCompileShader(shader);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+    if (status != GL_TRUE) {
+        int length;
+        char* log;
+
+        fprintf(stderr, "failed to compile shader\n");
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+        if (length > 1) {
+            log = (char*)calloc(length, sizeof(char));
+            glGetShaderInfoLog(shader, length, &length, log);
+            fprintf(stderr, "%s\n", log);
+            free(log);
+        }
+        return false;
+    }
+
+    return shader;
+}
+
+static GLuint createAndLinkProgram(GLuint v_shader, GLuint f_shader)
+{
+    GLuint program;
+    GLint linked;
+
+    program = glCreateProgram();
+    if (program == 0) {
+        fprintf(stderr, "failed to create program\n");
+        return 0;
+    }
+
+    glAttachShader(program, v_shader);
+    glAttachShader(program, f_shader);
+
+    glLinkProgram(program);
+
+    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+
+    if (linked != GL_TRUE) {
+        int length;
+        char* log;
+
+        fprintf(stderr, "failed to link program\n");
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
+        if (length > 1) {
+            log = (char*)calloc(length, sizeof(char));
+            glGetProgramInfoLog(program, length, &length, log);
+            fprintf(stderr, "%s\n", log);
+            free(log);
+        }
+        glDeleteProgram(program);
+        return 0;
+    }
+
+    return program;
+}
+
+void drawTriangle(GLuint program, GLuint vbo, GLuint color, GLuint texture)
+{
+    glUseProgram(program);
+
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glEnableVertexAttribArray(POSITION);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(POSITION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glEnableVertexAttribArray(COLOR);
+    glBindBuffer(GL_ARRAY_BUFFER, color);
+    glVertexAttribPointer(COLOR, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+    glUseProgram(program);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+    glDisableVertexAttribArray(POSITION);
+    glDisableVertexAttribArray(COLOR);
+
+    //glutSwapBuffers();
+}
+
 class MyTextureCanvas : public Canvas {
 public:
     MyTextureCanvas(Widget *parent) : Canvas(parent, 1), m_rotation(0.f) {
@@ -284,7 +419,7 @@ public:
                 //          shader compilation.
                 //          However, this following line makes use of 'frag_color', which depends on 'color' in vertex shader.  So 'color'
                 //          attribute is kept.
-                c = vec4(value.x, 0.0, 0.0, 1.0);
+                //c = vec4(value.x, 0.0, 0.0, 1.0);
             })"
 #elif defined(NANOGUI_USE_METAL)
             // Vertex shader
@@ -356,8 +491,9 @@ public:
             std::cout << "\r" << std::string(96, ' ');
             std::cout << "\rLoading " << texture_file_path;
 
-            int width, height, channels;
-            uint8_t* image_data = stbi_load(texture_file_path.c_str(), &width, &height, &channels, 0);
+            //int width, height, channels;
+            int channels;
+            uint8_t* image_data = stbi_load(texture_file_path.c_str(), &m_texture_cx, &m_texture_cy, &channels, 0);
             if (image_data != nullptr) {
                 int pixel_format;
                 switch (channels)
@@ -370,11 +506,10 @@ public:
                         stbi_image_free(image_data);
                         goto errExit;
                 }
-
                 
                 glGenTextures(1, &m_texture);
                 glBindTexture(GL_TEXTURE_2D, m_texture);
-                glTexImage2D(GL_TEXTURE_2D, 0, pixel_format, width, height, 0, pixel_format, GL_UNSIGNED_BYTE, image_data);
+                glTexImage2D(GL_TEXTURE_2D, 0, pixel_format, m_texture_cx, m_texture_cy, 0, pixel_format, GL_UNSIGNED_BYTE, image_data);
                 glGenerateMipmap(GL_TEXTURE_2D);
 
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -387,6 +522,104 @@ public:
 
             }
         }
+
+        // create quad for drawing texture to frame buffer
+        GLfloat vVertices[] = {
+            -1.0f, -1.0f, 0.0f,
+            -1.0f,  1.0f, 0.0f,
+            1.0f, -1.0f, 0.0f,
+            
+            -1.0f,  1.0f, 0.0f,
+            1.0f,  1.0f, 0.0f,
+            1.0f, -1.0f, 0.0f,
+        };
+
+        
+        float vColors[] = { // used as texture st coordinates
+            0.0f,  0.0f, 0.0f,
+            0.0f, -1.0f, 0.0f,
+            1.0f,  0.0f, 0.0f,
+            
+            0.0f, -1.0f, 0.0f,
+            1.0f, -1.0f, 0.0f,
+            1.0f,  0.0f, 0.0f,
+        };
+        
+        glClearColor(0, 0, 0, 1);
+        glGenBuffers(1, &m_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vVertices), vVertices, GL_STATIC_DRAW);
+
+        glGenBuffers(1, &m_color);
+        glBindBuffer(GL_ARRAY_BUFFER, m_color);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vColors), vColors, GL_STATIC_DRAW);
+
+        // create frame buffer
+        glGenFramebuffers(1, &m_fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+
+        glGenTextures(1, &m_fbo_texture);
+        glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_texture_cx, m_texture_cy, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_fbo_texture, 0);
+
+        // 310es shaders
+        GLuint v_shader = buildShader(vert_shader_source_310es, GL_VERTEX_SHADER);
+        if (v_shader == 0) {
+            fprintf(stderr, "failed to build vertex shader\n");
+            return;
+        }
+
+        GLuint f_shader = buildShader(frag_shader_source_310es, GL_FRAGMENT_SHADER);
+        if (f_shader == 0) {
+            fprintf(stderr, "failed to build fragment shader\n");
+            glDeleteShader(v_shader);
+            return;
+        }
+
+        glReleaseShaderCompiler(); // should release resources allocated for the compiler
+
+        m_program = createAndLinkProgram(v_shader, f_shader);
+        if (m_program == 0) {
+            fprintf(stderr, "failed to create and link program\n");
+            glDeleteShader(v_shader);
+            glDeleteShader(f_shader);
+            return;
+        }
+
+        //glUseProgram(m_program);
+
+        // this won't actually delete the shaders until the program is closed but it's a good practice
+        glDeleteShader(v_shader);
+        glDeleteShader(f_shader);
+
+        // bind fbo
+        glGetIntegerv(GL_VIEWPORT, m_prev_viewport);
+        glViewport(0, 0, m_texture_cx, m_texture_cy);
+
+        glGetIntegerv(GL_SCISSOR_BOX, m_prev_viewport);
+        glScissor(0, 0, m_texture_cx, m_texture_cy);
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+
+        // draw texture to frame buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+        drawTriangle (m_program, m_vbo, m_color, m_texture);
+
+        // unbind fbo
+        glViewport(m_prev_viewport[0], m_prev_viewport[1], m_prev_viewport[2], m_prev_viewport[3]);
+        glScissor(m_prev_scissor[0], m_prev_scissor[1], m_prev_scissor[2], m_prev_scissor[3]);
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     virtual ~MyTextureCanvas() {
@@ -431,7 +664,8 @@ public:
         m_shader->begin();
         
         //glActiveTexture(GL_TEXTURE0 + m_texture);
-        glBindTexture(GL_TEXTURE_2D, m_texture);
+        //glBindTexture(GL_TEXTURE_2D, m_texture);
+        glBindTexture(GL_TEXTURE_2D, m_fbo_texture);
 
         m_shader->draw_array(Shader::PrimitiveType::Triangle, 0, 12*3, true);
         m_shader->end();
@@ -442,6 +676,18 @@ private:
     float m_rotation;
     
     GLuint m_texture;
+    int    m_texture_cx;
+    int    m_texture_cy;
+
+    GLuint m_fbo;
+    GLuint m_fbo_texture;
+
+    GLuint m_program;
+
+    GLuint m_vbo, m_color;
+    
+    int m_prev_viewport[4] = { 0 };
+    int m_prev_scissor[4] = { 0 };
 };
 
 
